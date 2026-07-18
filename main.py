@@ -41,8 +41,8 @@ MODEL_GEMMA = "google/gemma-4-31b-it:free"
 # Modellarni tanlash uchun tugmalar (Inline Keyboard)
 def get_model_keyboard():
     buttons = [
-        [InlineKeyboardButton(text="🧠 GPT-OSS 120B (Katta va aqlli)", callback_data="set_gpt")],
-        [InlineKeyboardButton(text="⚡ Gemma 4 31B (Tezkor va yangi)", callback_data="set_gemma")]
+        [InlineKeyboardButton(text="⚡ GPT-OSS 120B (Tezkor va yangi)", callback_data="set_gpt")],
+        [InlineKeyboardButton(text="⚡🧠 Gemma 4 31B (Katta va aqlli)", callback_data="set_gemma")]
     ]
     return InlineKeyboardMarkup(inline_keyboard=buttons)
 
@@ -55,7 +55,7 @@ async def command_start_handler(message: Message) -> None:
     
     await message.answer(
         f"Salom, {html.bold(message.from_user.full_name)}!\n"
-        f"Men multimodel botman. Hozirda sizda <b>GPT-OSS 120B</b> modeli faol.\n\n"
+        f"Men multimodel botman. Hozirda sizda <b>GPT-OSS 20B</b> modeli faol.\n\n"
         f"🤖 Modelni o'zgartirish uchun: /model buyrug'ini yuboring.\n"
         f"🧹 Tarixni o'chirish uchun: /clear"
     )
@@ -77,7 +77,7 @@ async def process_set_gpt(callback: CallbackQuery):
     user_id = callback.from_user.id
     user_models[user_id] = MODEL_GPT
     chat_histories[user_id] = [] # Model almashganda tarixni tozalash tavsiya etiladi
-    await callback.message.edit_text("✅ Model <b>GPT-OSS 120B</b> ga o'zgartirildi va chat tarixi yangilandi!", parse_mode="HTML")
+    await callback.message.edit_text("✅ Model <b>GPT-OSS 20B</b> ga o'zgartirildi va chat tarixi yangilandi!", parse_mode="HTML")
     await callback.answer()
 
 @dp.callback_query(F.data == "set_gemma")
