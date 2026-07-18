@@ -35,7 +35,7 @@ chat_histories = {}
 user_models = {} # Foydalanuvchi tanlagan modelni saqlaydi: {user_id: "model_nomi"}
 
 # Modellarni aniqlab olamiz
-MODEL_GPT = "openai/gpt-oss-120b:free"
+MODEL_GPT = "openai/gpt-oss-20b:free"
 MODEL_GEMMA = "google/gemma-4-31b-it:free"
 
 # Modellarni tanlash uchun tugmalar (Inline Keyboard)
