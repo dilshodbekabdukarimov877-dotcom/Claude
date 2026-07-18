@@ -41,7 +41,7 @@ MODEL_GEMMA = "google/gemma-4-31b-it:free"
 # Modellarni tanlash uchun tugmalar (Inline Keyboard)
 def get_model_keyboard():
     buttons = [
-        [InlineKeyboardButton(text="⚡ GPT-OSS 120B (Tezkor va yangi)", callback_data="set_gpt")],
+        [InlineKeyboardButton(text="⚡ GPT-OSS 20B (Tezkor va yangi)", callback_data="set_gpt")],
         [InlineKeyboardButton(text="🧠 Gemma 4 31B (Katta va aqlli)", callback_data="set_gemma")]
     ]
     return InlineKeyboardMarkup(inline_keyboard=buttons)
