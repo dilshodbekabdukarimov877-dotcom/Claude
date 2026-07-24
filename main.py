@@ -43,7 +43,7 @@ user_models = {}
 # Modellarni aniqlab olamiz
 MODEL_GPT = "openai/gpt-oss-20b:free"
 MODEL_GEMMA = "google/gemma-4-31b-it:free"
-MODEL_IMAGE = "imagen-3.0-generate-002" # Google AI Studio rasm modeli
+MODEL_IMAGE = "gemini-3.1-flash-lite-image" # Google AI Studio rasm modeli
 
 # Modellarni tanlash uchun tugmalar (Inline Keyboard)
 def get_model_keyboard():
