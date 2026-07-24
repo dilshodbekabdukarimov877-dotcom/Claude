@@ -43,7 +43,7 @@ user_models = {}
 # Modellarni aniqlab olamiz
 MODEL_GPT = "openai/gpt-oss-20b:free"
 MODEL_GEMMA = "google/gemma-4-31b-it:free"
-MODEL_IMAGE = "gemini-3.1-flash-lite-image" # AI Studio'dagi Nano Banana 2 Lite
+MODEL_IMAGE = "gemini-3.5-flash" # AI Studio'dagi Nano Banana 2 Lite
 
 # Modellarni tanlash uchun tugmalar (Inline Keyboard)
 def get_model_keyboard():
