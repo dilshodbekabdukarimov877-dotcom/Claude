@@ -33,8 +33,11 @@ openrouter_client = AsyncOpenAI(
     }
 )
 
-# 2. Google AI Studio Klienti
-google_client = genai.Client(api_key=GEMINI_API_KEY)
+# 2. Google AI Studio Klienti (Yangi modellar uchun v1beta rejimida)
+google_client = genai.Client(
+    api_key=GEMINI_API_KEY,
+    http_options={'api_version': 'v1beta'}
+)
 
 # Xotira lug'atlari
 chat_histories = {}
@@ -43,7 +46,7 @@ user_models = {}
 # Modellarni aniqlab olamiz
 MODEL_GPT = "openai/gpt-oss-20b:free"
 MODEL_GEMMA = "google/gemma-4-31b-it:free"
-MODEL_IMAGE = "gemini-3.5-flash" # AI Studio'dagi Nano Banana 2 Lite
+MODEL_IMAGE = "gemini-3.1-flash-lite-image" # Nano Banana 2 Lite
 
 # Modellarni tanlash uchun tugmalar (Inline Keyboard)
 def get_model_keyboard():
@@ -69,6 +72,7 @@ async def command_start_handler(message: Message) -> None:
 
 @dp.message(Command("model"))
 async def command_model_handler(message: Message) -> None:
+    """ Modelni tanlash tugmalarini chiqarish """
     await message.answer("Quyidagi AI modellaridan birini tanlang:", reply_markup=get_model_keyboard())
 
 @dp.message(Command("clear"))
@@ -77,7 +81,7 @@ async def command_clear_handler(message: Message) -> None:
     chat_histories[user_id] = []
     await message.answer("🧹 Suhbatingiz tarixi tozalandi!")
 
-# Callback Query handleri
+# Callback Query handleri (Tugmalar bosilganda)
 @dp.callback_query(F.data == "set_gpt")
 async def process_set_gpt(callback: CallbackQuery):
     user_id = callback.from_user.id
@@ -133,10 +137,11 @@ async def ai_handler(message: Message) -> None:
             
             # Javob ichidan rasm baytlarini ajratib olamiz
             image_bytes = None
-            for part in response.candidates[0].content.parts:
-                if part.inline_data is not None:
-                    image_bytes = part.inline_data.data
-                    break
+            if response.candidates and response.candidates[0].content:
+                for part in response.candidates[0].content.parts:
+                    if part.inline_data is not None:
+                        image_bytes = part.inline_data.data
+                        break
 
             await waiting_message.delete()
 
@@ -149,7 +154,12 @@ async def ai_handler(message: Message) -> None:
         except Exception as e:
             logging.error(f"AI Studio rasm xatoligi: {e}")
             await waiting_message.delete()
-            await message.answer(f"❌ Rasm yaratishda xatolik yuz berdi:\n<code>{str(e)[:150]}</code>", parse_mode="HTML")
+            
+            error_str = str(e)
+            if "429" in error_str or "RESOURCE_EXHAUSTED" in error_str:
+                await message.answer("⚠️ <b>API limitiga erishildi!</b>\nBiroz kuting va so'rovingizni qaytadan yuboring.", parse_mode="HTML")
+            else:
+                await message.answer(f"❌ Rasm yaratishda xatolik yuz berdi:\n<code>{error_str[:150]}</code>", parse_mode="HTML")
         return
 
     # === OPENROUTER ORQALI MATNLI CHAT (GPT / Gemma) ===
