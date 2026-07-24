@@ -2,7 +2,7 @@ import os
 import logging
 import asyncio
 from aiogram import Bot, Dispatcher, html, F
-from aiogram.types import Message, InlineKeyboardMarkup, InlineKeyboardButton, CallbackQuery
+from aiogram.types import Message, InlineKeyboardMarkup, InlineKeyboardButton, CallbackQuery, BufferedInputFile
 from aiogram.filters import CommandStart, Command
 from openai import AsyncOpenAI
 from google import genai
@@ -33,7 +33,7 @@ openrouter_client = AsyncOpenAI(
     }
 )
 
-# 2. Google AI Studio uchun GenAI Klienti
+# 2. Google AI Studio Klienti
 google_client = genai.Client(api_key=GEMINI_API_KEY)
 
 # Xotira lug'atlari
@@ -43,14 +43,14 @@ user_models = {}
 # Modellarni aniqlab olamiz
 MODEL_GPT = "openai/gpt-oss-20b:free"
 MODEL_GEMMA = "google/gemma-4-31b-it:free"
-MODEL_IMAGE = "gemini-3.1-flash-lite-image" # Google AI Studio rasm modeli
+MODEL_IMAGE = "gemini-3.1-flash-lite-image" # AI Studio'dagi Nano Banana 2 Lite
 
 # Modellarni tanlash uchun tugmalar (Inline Keyboard)
 def get_model_keyboard():
     buttons = [
         [InlineKeyboardButton(text="⚡ GPT-OSS 20B (OpenRouter)", callback_data="set_gpt")],
         [InlineKeyboardButton(text="🧠 Gemma 4 31B (OpenRouter)", callback_data="set_gemma")],
-        [InlineKeyboardButton(text="🎨 Imagen 3 (Google AI Studio)", callback_data="set_image")]
+        [InlineKeyboardButton(text="🎨 Nano Banana Lite (Google AI Studio)", callback_data="set_image")]
     ]
     return InlineKeyboardMarkup(inline_keyboard=buttons)
 
@@ -99,7 +99,7 @@ async def process_set_image(callback: CallbackQuery):
     user_id = callback.from_user.id
     user_models[user_id] = MODEL_IMAGE
     chat_histories[user_id] = []
-    await callback.message.edit_text("🎨 Model <b>Imagen 3 (Google AI Studio)</b> ga o'zgartirildi!\n\n<i>Rasm ta'rifini yuboring.</i>", parse_mode="HTML")
+    await callback.message.edit_text("🎨 Model <b>Nano Banana Lite (gemini-3.1-flash-lite-image)</b> ga o'zgartirildi!\n\n<i>Rasm ta'rifini yuboring.</i>", parse_mode="HTML")
     await callback.answer()
 
 @dp.message()
@@ -113,36 +113,41 @@ async def ai_handler(message: Message) -> None:
         
     current_model = user_models[user_id]
 
-    # === GOOGLE AI STUDIO ORQALI RASM GENERATSIYA QILISH ===
+    # === GOOGLE AI STUDIO (gemini-3.1-flash-lite-image) ORQALI RASM YARATISH ===
     if current_model == MODEL_IMAGE:
         waiting_message = await message.answer("🎨 <i>Google AI Studio orqali rasm chizilyapti...</i>", parse_mode="HTML")
         try:
-            # Sync funksiyani asinxron ishlatish uchun loop.run_in_executor
             loop = asyncio.get_running_loop()
-            result = await loop.run_in_executor(
+            
+            # Gemini rasm modellarida generate_content ishlatiladi
+            response = await loop.run_in_executor(
                 None,
-                lambda: google_client.models.generate_images(
+                lambda: google_client.models.generate_content(
                     model=MODEL_IMAGE,
-                    prompt=message.text,
-                    config=types.GenerateImagesConfig(
-                        number_of_images=1,
-                        output_mime_type="image/jpeg"
+                    contents=message.text,
+                    config=types.GenerateContentConfig(
+                        response_modalities=["TEXT", "IMAGE"]
                     )
                 )
             )
             
-            # Yaratilgan rasmni baytlarda olish
-            image_bytes = result.generated_images[0].image.image_bytes
-            
+            # Javob ichidan rasm baytlarini ajratib olamiz
+            image_bytes = None
+            for part in response.candidates[0].content.parts:
+                if part.inline_data is not None:
+                    image_bytes = part.inline_data.data
+                    break
+
             await waiting_message.delete()
-            
-            # Telegram'ga fayl sifatidagi rasmni yuborish
-            from aiogram.types import BufferedInputFile
-            photo_file = BufferedInputFile(image_bytes, filename="generated_image.jpg")
-            await message.answer_photo(photo=photo_file, caption=f"🖼 <b>Prompt:</b> {message.text}", parse_mode="HTML")
+
+            if image_bytes:
+                photo_file = BufferedInputFile(image_bytes, filename="generated_image.png")
+                await message.answer_photo(photo=photo_file, caption=f"🖼 <b>Prompt:</b> {message.text}", parse_mode="HTML")
+            else:
+                await message.answer("❌ Rasm yaratib bo'lmadi yoki model matnli javob qaytardi.")
 
         except Exception as e:
-            logging.error(f"Google AI Studio rasm xatoligi: {e}")
+            logging.error(f"AI Studio rasm xatoligi: {e}")
             await waiting_message.delete()
             await message.answer(f"❌ Rasm yaratishda xatolik yuz berdi:\n<code>{str(e)[:150]}</code>", parse_mode="HTML")
         return
