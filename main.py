@@ -22,7 +22,7 @@ if not TELEGRAM_TOKEN or not OPENROUTER_API_KEY:
 bot = Bot(token=TELEGRAM_TOKEN)
 dp = Dispatcher()
 
-# OpenRouter Klienti (Bepul GPT va Gemma uchun)
+# OpenRouter Klienti (Matnli AI uchun)
 openrouter_client = AsyncOpenAI(
     base_url="https://openrouter.ai/api/v1",
     api_key=OPENROUTER_API_KEY,
@@ -36,10 +36,10 @@ openrouter_client = AsyncOpenAI(
 chat_histories = {}
 user_models = {}
 
-# Modellarni aniqlab olamiz (Faqat bepul modellar)
+# Modellarni aniqlab olamiz
 MODEL_GPT = "openai/gpt-oss-20b:free"
 MODEL_GEMMA = "google/gemma-4-31b-it:free"
-MODEL_IMAGE = "free-image-generator"
+MODEL_IMAGE = "free-image-generator" # Mutlaqo bepul rasm rejimi
 
 # Modellarni tanlash uchun tugmalar (Inline Keyboard)
 def get_model_keyboard():
@@ -95,7 +95,7 @@ async def process_set_image(callback: CallbackQuery):
     user_id = callback.from_user.id
     user_models[user_id] = MODEL_IMAGE
     chat_histories[user_id] = []
-    await callback.message.edit_text("🎨 Model <b>Bepul Rasm Generator</b>ga o'zgartirildi!\n\n<i>Rasm ta'rifini yuboring.</i>", parse_mode="HTML")
+    await callback.message.edit_text("🎨 Model <b>Bepul Rasm Generator</b>ga o'zgartirildi!\n\n<i>Rasm ta'rifini ingliz tilida yuborsangiz aniqroq chiqadi.</i>", parse_mode="HTML")
     await callback.answer()
 
 @dp.message()
@@ -113,6 +113,7 @@ async def ai_handler(message: Message) -> None:
     if current_model == MODEL_IMAGE:
         waiting_message = await message.answer("🎨 <i>Rasm chizilyapti, biroz kuting...</i>", parse_mode="HTML")
         try:
+            # Promptni URL uchun xavfsiz shaklga keltirish
             encoded_prompt = urllib.parse.quote(message.text)
             image_url = f"https://image.pollinations.ai/prompt/{encoded_prompt}?width=1024&height=1024&nologo=true"
 
