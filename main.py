@@ -22,7 +22,7 @@ if not TELEGRAM_TOKEN or not OPENROUTER_API_KEY:
 bot = Bot(token=TELEGRAM_TOKEN)
 dp = Dispatcher()
 
-# OpenRouter Klienti (Matnli AI uchun)
+# OpenRouter Klienti (Barcha matnli AI modellar uchun)
 openrouter_client = AsyncOpenAI(
     base_url="https://openrouter.ai/api/v1",
     api_key=OPENROUTER_API_KEY,
@@ -36,16 +36,18 @@ openrouter_client = AsyncOpenAI(
 chat_histories = {}
 user_models = {}
 
-# Modellarni aniqlab olamiz
+# Modellarni aniqlab olamiz (3 ta matnli + 1 ta rasm generatori)
 MODEL_GPT = "openai/gpt-oss-20b:free"
 MODEL_GEMMA = "google/gemma-4-31b-it:free"
-MODEL_IMAGE = "free-image-generator" # Mutlaqo bepul rasm rejimi
+MODEL_LING = "inclusionai/ling-3.0-flash:free"
+MODEL_IMAGE = "free-image-generator"
 
 # Modellarni tanlash uchun tugmalar (Inline Keyboard)
 def get_model_keyboard():
     buttons = [
-        [InlineKeyboardButton(text="⚡ GPT-OSS 20B (Bepul Chat)", callback_data="set_gpt")],
-        [InlineKeyboardButton(text="🧠 Gemma 4 31B (Bepul Chat)", callback_data="set_gemma")],
+        [InlineKeyboardButton(text="⚡ GPT-OSS 20B (OpenRouter)", callback_data="set_gpt")],
+        [InlineKeyboardButton(text="🧠 Gemma 4 31B (OpenRouter)", callback_data="set_gemma")],
+        [InlineKeyboardButton(text="🚀 Ling 3.0 Flash (OpenRouter)", callback_data="set_ling")],
         [InlineKeyboardButton(text="🎨 Bepul Rasm Generator (Flux/SD)", callback_data="set_image")]
     ]
     return InlineKeyboardMarkup(inline_keyboard=buttons)
@@ -73,7 +75,7 @@ async def command_clear_handler(message: Message) -> None:
     chat_histories[user_id] = []
     await message.answer("🧹 Suhbatingiz tarixi tozalandi!")
 
-# Callback Query handleri
+# Callback Query handlerlari (Tugmalar bosilganda)
 @dp.callback_query(F.data == "set_gpt")
 async def process_set_gpt(callback: CallbackQuery):
     user_id = callback.from_user.id
@@ -90,12 +92,20 @@ async def process_set_gemma(callback: CallbackQuery):
     await callback.message.edit_text("✅ Model <b>Gemma 4 31B</b> ga o'zgartirildi!", parse_mode="HTML")
     await callback.answer()
 
+@dp.callback_query(F.data == "set_ling")
+async def process_set_ling(callback: CallbackQuery):
+    user_id = callback.from_user.id
+    user_models[user_id] = MODEL_LING
+    chat_histories[user_id] = []
+    await callback.message.edit_text("🚀 Model <b>Ling 3.0 Flash</b> ga o'zgartirildi!", parse_mode="HTML")
+    await callback.answer()
+
 @dp.callback_query(F.data == "set_image")
 async def process_set_image(callback: CallbackQuery):
     user_id = callback.from_user.id
     user_models[user_id] = MODEL_IMAGE
     chat_histories[user_id] = []
-    await callback.message.edit_text("🎨 Model <b>Bepul Rasm Generator</b>ga o'zgartirildi!\n\n<i>Rasm ta'rifini ingliz tilida yuborsangiz aniqroq chiqadi.</i>", parse_mode="HTML")
+    await callback.message.edit_text("🎨 Model <b>Bepul Rasm Generator</b>ga o'zgartirildi!\n\n<i>Rasm ta'rifini yuboring.</i>", parse_mode="HTML")
     await callback.answer()
 
 @dp.message()
@@ -113,7 +123,6 @@ async def ai_handler(message: Message) -> None:
     if current_model == MODEL_IMAGE:
         waiting_message = await message.answer("🎨 <i>Rasm chizilyapti, biroz kuting...</i>", parse_mode="HTML")
         try:
-            # Promptni URL uchun xavfsiz shaklga keltirish
             encoded_prompt = urllib.parse.quote(message.text)
             image_url = f"https://image.pollinations.ai/prompt/{encoded_prompt}?width=1024&height=1024&nologo=true"
 
@@ -135,7 +144,7 @@ async def ai_handler(message: Message) -> None:
             await message.answer(f"❌ Xatolik yuz berdi:\n<code>{str(e)[:150]}</code>", parse_mode="HTML")
         return
 
-    # === OPENROUTER ORQALI BEPUL MATNLI CHAT (GPT / Gemma) ===
+    # === OPENROUTER ORQALI MATNLI CHAT (GPT / Gemma / Ling 3.0 Flash) ===
     waiting_message = await message.answer("💡 <i>O'ylayapman...</i>", parse_mode="HTML")
     
     chat_histories[user_id].append({"role": "user", "content": message.text})
