@@ -22,7 +22,7 @@ if not TELEGRAM_TOKEN or not OPENROUTER_API_KEY:
 bot = Bot(token=TELEGRAM_TOKEN)
 dp = Dispatcher()
 
-# OpenRouter Klienti (Barcha matnli AI modellar uchun)
+# OpenRouter Klienti (Matnli AI modellar uchun)
 openrouter_client = AsyncOpenAI(
     base_url="https://openrouter.ai/api/v1",
     api_key=OPENROUTER_API_KEY,
@@ -36,18 +36,16 @@ openrouter_client = AsyncOpenAI(
 chat_histories = {}
 user_models = {}
 
-# Modellarni aniqlab olamiz (3 ta matnli + 1 ta rasm generatori)
+# Modellarni aniqlab olamiz (2 ta matnli + 1 ta rasm generatori)
 MODEL_GPT = "openai/gpt-oss-20b:free"
-MODEL_GEMMA = "google/gemma-4-31b-it:free"
-MODEL_LING = "inclusionai/ling-3.0-flash:free"
+MODEL_NEMOTRON = "nvidia/nemotron-3-ultra-550b-a55b:free"
 MODEL_IMAGE = "free-image-generator"
 
 # Modellarni tanlash uchun tugmalar (Inline Keyboard)
 def get_model_keyboard():
     buttons = [
         [InlineKeyboardButton(text="⚡ GPT-OSS 20B (OpenRouter)", callback_data="set_gpt")],
-        [InlineKeyboardButton(text="🧠 Gemma 4 31B (OpenRouter)", callback_data="set_gemma")],
-        [InlineKeyboardButton(text="🚀 Ling 3.0 Flash (OpenRouter)", callback_data="set_ling")],
+        [InlineKeyboardButton(text="🚀 Nemotron 3 Ultra (OpenRouter)", callback_data="set_nemotron")],
         [InlineKeyboardButton(text="🎨 Bepul Rasm Generator (Flux/SD)", callback_data="set_image")]
     ]
     return InlineKeyboardMarkup(inline_keyboard=buttons)
@@ -84,20 +82,12 @@ async def process_set_gpt(callback: CallbackQuery):
     await callback.message.edit_text("✅ Model <b>GPT-OSS 20B</b> ga o'zgartirildi!", parse_mode="HTML")
     await callback.answer()
 
-@dp.callback_query(F.data == "set_gemma")
-async def process_set_gemma(callback: CallbackQuery):
+@dp.callback_query(F.data == "set_nemotron")
+async def process_set_nemotron(callback: CallbackQuery):
     user_id = callback.from_user.id
-    user_models[user_id] = MODEL_GEMMA
+    user_models[user_id] = MODEL_NEMOTRON
     chat_histories[user_id] = []
-    await callback.message.edit_text("✅ Model <b>Gemma 4 31B</b> ga o'zgartirildi!", parse_mode="HTML")
-    await callback.answer()
-
-@dp.callback_query(F.data == "set_ling")
-async def process_set_ling(callback: CallbackQuery):
-    user_id = callback.from_user.id
-    user_models[user_id] = MODEL_LING
-    chat_histories[user_id] = []
-    await callback.message.edit_text("🚀 Model <b>Ling 3.0 Flash</b> ga o'zgartirildi!", parse_mode="HTML")
+    await callback.message.edit_text("🚀 Model <b>Nemotron 3 Ultra</b> ga o'zgartirildi!", parse_mode="HTML")
     await callback.answer()
 
 @dp.callback_query(F.data == "set_image")
@@ -144,7 +134,7 @@ async def ai_handler(message: Message) -> None:
             await message.answer(f"❌ Xatolik yuz berdi:\n<code>{str(e)[:150]}</code>", parse_mode="HTML")
         return
 
-    # === OPENROUTER ORQALI MATNLI CHAT (GPT / Gemma / Ling 3.0 Flash) ===
+    # === OPENROUTER ORQALI MATNLI CHAT (GPT-OSS / Nemotron 3 Ultra) ===
     waiting_message = await message.answer("💡 <i>O'ylayapman...</i>", parse_mode="HTML")
     
     chat_histories[user_id].append({"role": "user", "content": message.text})
