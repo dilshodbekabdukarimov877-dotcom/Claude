@@ -146,7 +146,7 @@ async def ai_handler(message: Message) -> None:
         response = await openrouter_client.chat.completions.create(
             model=current_model,
             messages=chat_histories[user_id],
-            max_tokens=1500
+            max_tokens=99999
         )
         
         reply_text = response.choices[0].message.content
